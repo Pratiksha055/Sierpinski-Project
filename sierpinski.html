@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sierpinski Gasket - WebGL</title>
+  <style>
+    canvas { border: 1px solid black; }
+  </style>
+</head>
+<body>
+<canvas id="glcanvas" width="500" height="500"></canvas>
+<script type="text/javascript">
+  const canvas = document.getElementById("glcanvas");
+  const gl = canvas.getContext("webgl");
+
+  if (!gl) {
+    alert("WebGL not supported");
+  }
+
+  // Vertex Shader
+  const vertexShaderSource = `
+    attribute vec2 aPosition;
+    void main() {
+      gl_PointSize = 1.0;
+      gl_Position = vec4(aPosition, 0.0, 1.0);
+    }
+  `;
+
+  // Fragment Shader
+  const fragmentShaderSource = `
+    precision mediump float;
+    void main() {
+      gl_FragColor = vec4(0.1, 0.4, 0.8, 1.0);
+    }
+  `;
+
+  // Compile shaders
+  function compileShader(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+    }
+    return shader;
+  }
+
+  const vertexShader = compileShader(gl.VERTEX_SHADER, vertexShaderSource);
+  const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+  // Create program
+  const program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  gl.useProgram(program);
+
+  // Generate Sierpinski points
+  const vertices = [
+    [-1, -1], [0, 1], [1, -1] // triangle vertices
+  ];
+  let points = [];
+  let p = [0, 0];
+
+  for (let i = 0; i < 5000; i++) {
+    const j = Math.floor(Math.random() * 3);
+    p = [
+      (p[0] + vertices[j][0]) / 2,
+      (p[1] + vertices[j][1]) / 2
+    ];
+    points.push(...p);
+  }
+
+  // Buffer data
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+
+  const aPosition = gl.getAttribLocation(program, "aPosition");
+  gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(aPosition);
+
+  // Draw
+  gl.clearColor(1.0, 1.0, 1.0, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.drawArrays(gl.POINTS, 0, points.length / 2);
+</script>
+</body>
+</html>
